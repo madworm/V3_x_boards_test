@@ -1,5 +1,5 @@
 /*
-2009 - robert@spitzenpfeil.org - V3_x board test
+2009 - robert:aT:spitzenpfeil_d*t:org - V3_x board test
 */
 
 #define __spi_clock 13   // SCK - hardware SPI
@@ -17,8 +17,6 @@
 
 #define __TIMER1_MAX 0xFFFF // 16 bit CTR
 #define __TIMER1_CNT 0x0130 // 32 levels --> 0x0130; 38 --> 0x0157 (flicker)
-#define __TIMER2_MAX 0xFF // 8 bit CTR
-#define __TIMER2_CNT 0xFF // max 28 levels !
 
 #define __led_pin 4
 #define __button_pin 8
@@ -28,54 +26,9 @@
 #include <avr/io.h>
 
 
-byte brightness_red[__leds_per_row][__rows]; 
-byte brightness_green[__leds_per_row][__rows];
-byte brightness_blue[__leds_per_row][__rows]; 
-
-
-ISR(TIMER1_OVF_vect) {
-  //TCNT2 = __TIMER2_MAX - __TIMER2_CNT; // precharge TIMER2 to maximize ISR time --> max led brightness
-  TCNT1 = __TIMER1_MAX - __TIMER1_CNT;
-  byte cycle;
-  
-  digitalWrite(__display_enable,LOW); // enable display inside ISR
-  
-  for(cycle = 0; cycle < __max_brightness; cycle++) {
-    byte led;
-    byte row = B00000000;    // row: current source. on when (1)
-    byte red;    // current sinker when on (0)
-    byte green;  // current sinker when on (0)
-    byte blue;   // current sinker when on (0)
-
-    for(row = 0; row <= __max_row; row++) {
-      
-      red = B11111111;    // off
-      green = B11111111;  // off
-      blue = B11111111;   // off
-      
-      for(led = 0; led <= __max_led; led++) {
-        if(cycle < brightness_red[row][led]) {
-          red &= ~(1<<led);
-        }
-        if(cycle < brightness_green[row][led]) {
-          green &= ~(1<<led);
-        }
-        if(cycle < brightness_blue[row][led]) {
-          blue &= ~(1<<led);
-        }
-      }
-
-      digitalWrite(__spi_latch,LOW);
-      spi_transfer(B00000001<<row);
-      spi_transfer(blue);
-      spi_transfer(green);
-      spi_transfer(red);
-      digitalWrite(__spi_latch,HIGH);
-      digitalWrite(__spi_latch,LOW);
-    }
-  }
-  digitalWrite(__display_enable,HIGH);    // disable display outside ISR
-}
+byte brightness_red[__leds_per_row][__rows];	/* memory for RED LEDs */
+byte brightness_green[__leds_per_row][__rows];	/* memory for GREEN LEDs */
+byte brightness_blue[__leds_per_row][__rows]; 	/* memory for BLUE LEDs */
 
 
 void setup(void) {
@@ -86,38 +39,30 @@ void setup(void) {
   pinMode(__spi_data_in,INPUT);
   pinMode(__display_enable,OUTPUT);
   pinMode(__button_pin,INPUT);
-  digitalWrite(__button_pin,HIGH); // turn on pullup
+  digitalWrite(__button_pin,HIGH);		/* turn on pullup */
   pinMode(__led_pin,OUTPUT);
   digitalWrite(__spi_latch,LOW);
   digitalWrite(__spi_data,LOW);
   digitalWrite(__spi_clock,LOW);
   setup_hardware_spi();
   delay(10);
-  set_matrix_rgb(0,0,0);
-  setup_timer1_ovf();
+  set_matrix_rgb(0,0,0);			/* set the display to BLACK */
+  setup_timer1_ovf();				/* enable the framebuffer display */
   Serial.begin(9600);
 }
 
 
-void loop(void) {
-  int ctr;
-  for(ctr=0; ctr < 400; ctr++) { 
-    random_leds();
-    if(digitalRead(__button_pin) == PRESSED) {
-      fader();
-      blink_led(2,50);
-      colors();
-      Serial.println("button pressed!");
-      delay(2500);
-    }
-    else {
-       blink_led(1,10);
-    }
-  }
-  smile_blink(200,8,100);
-  delay(2500);
+void loop(void) {				/* loop runs all the time */
+  demo();
 }
 
+
+
+
+
+/*
+other functions
+*/
 
 void blink_led(byte times, byte wait) {
   byte ctr;
@@ -127,98 +72,47 @@ void blink_led(byte times, byte wait) {
     digitalWrite(__led_pin,LOW);
     delay(wait);
   }
-  //delay(500);
 }
 
-
-byte spi_transfer(byte data)
-{
-  SPDR = data;                    // Start the transmission
-  while (!(SPSR & (1<<SPIF)))     // Wait the end of the transmission
-  {
-  };
-  return SPDR;                    // return the received byte, we don't need that
+void random_leds(void) {
+  set_led_hue((byte)(random(__rows)),(byte)(random(__leds_per_row)),(int)(random(360)));
 }
 
-
-void set_led_red(byte row, byte led, byte red) {
-  brightness_red[row][led] = red;
+void smile_on(int hue) {					/* smily with open eyes */
+  set_row_byte_hue(0,B00000000,hue);
+  set_row_byte_hue(1,B01100110,hue);
+  set_row_byte_hue(2,B01100110,hue);
+  set_row_byte_hue(3,B00000000,hue);
+  set_row_byte_hue(4,B00011000,hue);
+  set_row_byte_hue(5,B10011001,hue);
+  set_row_byte_hue(6,B01000010,hue);
+  set_row_byte_hue(7,B00111100,hue);
 }
 
-
-void set_led_green(byte row, byte led, byte green) {
-  brightness_green[row][led] = green;
+void smile_off(int hue) {					/* smily with closed eyes */
+  set_row_byte_hue(0,B00000000,hue);
+  set_row_byte_hue(1,B00000000,hue);
+  set_row_byte_hue(2,B01100110,hue);
+  set_row_byte_hue(3,B00000000,hue);
+  set_row_byte_hue(4,B00011000,hue);
+  set_row_byte_hue(5,B10011001,hue);
+  set_row_byte_hue(6,B01000010,hue);
+  set_row_byte_hue(7,B00111100,hue);
 }
 
-
-void set_led_blue(byte row, byte led, byte blue) {
-  brightness_blue[row][led] = blue;
+void smile_blink(int hue, byte times, int pause) {		/* blink a smily */
+ byte ctr;
+ for(ctr = 0; ctr < times; ctr++) {
+   delay(pause);
+   smile_on(hue);
+   delay(pause);
+   smile_off(hue);
+   delay(pause);
+   smile_on(hue);
+ }
 }
 
-
-void set_led_rgb(byte row, byte led, byte red, byte green, byte blue) {
-  set_led_red(row,led,red);
-  set_led_green(row,led,green);
-  set_led_blue(row,led,blue);
-}
-
-
-void set_matrix_rgb(byte red, byte green, byte blue) {
-  byte ctr1;
-  byte ctr2;
-  for(ctr2 = 0; ctr2 <= __max_row; ctr2++) {
-    for(ctr1 = 0; ctr1 <= __max_led; ctr1++) {
-      set_led_rgb(ctr2,ctr1,red,green,blue);
-    }
-  }
-}
-
-
-void set_row_rgb(byte row, byte red, byte green, byte blue) {
-  byte ctr1;
-  for(ctr1 = 0; ctr1 <= __max_led; ctr1++) {
-      set_led_rgb(row,ctr1,red,green,blue);
-  }
-}
-
-
-void set_column_rgb(byte column, byte red, byte green, byte blue) {
-  byte ctr1;
-  for(ctr1 = 0; ctr1 <= __max_row; ctr1++) {
-      set_led_rgb(ctr1,column,red,green,blue);
-  }
-}
-
-
-void set_row_hue(byte row, int hue) {
-  byte ctr1;
-  for(ctr1 = 0; ctr1 <= __max_led; ctr1++) {
-      set_led_hue(row,ctr1,hue);
-  }
-}
-
-
-void set_column_hue(byte column, int hue) {
-  byte ctr1;
-  for(ctr1 = 0; ctr1 <= __max_row; ctr1++) {
-      set_led_hue(ctr1,column,hue);
-  }
-}
-
-
-void set_matrix_hue(int hue) {
-  byte ctr1;
-  byte ctr2;
-  for(ctr2 = 0; ctr2 <= __max_row; ctr2++) {
-    for(ctr1 = 0; ctr1 <= __max_led; ctr1++) {
-      set_led_hue(ctr2,ctr1,hue);
-    }
-  }
-}
-
-
-
-void fader(void) {
+void fader(void) {						/* fade the matrix form BLACK to WHITE and back */
   byte ctr1;
   byte row;
   byte led;
@@ -242,8 +136,7 @@ void fader(void) {
   }
 }
 
-
-void fader_hue(void) {
+void fader_hue(void) {						/* cycle the color of the whole matrix */
   int ctr1;
   for(ctr1 = 0; ctr1 < 360; ctr1=ctr1+3) {
     set_matrix_hue(ctr1);
@@ -251,8 +144,7 @@ void fader_hue(void) {
   }
 }
 
-
-void colors(void) {
+void colors(void) {						/* some diagonal color pattern */
   int ctr1;
   int ctr2;
   byte row;
@@ -270,8 +162,80 @@ void colors(void) {
 }
 
 
-void set_led_hue(byte row, byte led, int hue) {
 
+
+
+/*
+basic functions to set the LEDs
+*/
+
+void set_led_red(byte row, byte led, byte red) {
+  brightness_red[row][led] = red;
+}
+
+void set_led_green(byte row, byte led, byte green) {
+  brightness_green[row][led] = green;
+}
+
+void set_led_blue(byte row, byte led, byte blue) {
+  brightness_blue[row][led] = blue;
+}
+
+void set_led_rgb(byte row, byte led, byte red, byte green, byte blue) {
+  set_led_red(row,led,red);
+  set_led_green(row,led,green);
+  set_led_blue(row,led,blue);
+}
+
+void set_matrix_rgb(byte red, byte green, byte blue) {
+  byte ctr1;
+  byte ctr2;
+  for(ctr2 = 0; ctr2 <= __max_row; ctr2++) {
+    for(ctr1 = 0; ctr1 <= __max_led; ctr1++) {
+      set_led_rgb(ctr2,ctr1,red,green,blue);
+    }
+  }
+}
+
+void set_row_rgb(byte row, byte red, byte green, byte blue) {
+  byte ctr1;
+  for(ctr1 = 0; ctr1 <= __max_led; ctr1++) {
+      set_led_rgb(row,ctr1,red,green,blue);
+  }
+}
+
+void set_column_rgb(byte column, byte red, byte green, byte blue) {
+  byte ctr1;
+  for(ctr1 = 0; ctr1 <= __max_row; ctr1++) {
+      set_led_rgb(ctr1,column,red,green,blue);
+  }
+}
+
+void set_row_hue(byte row, int hue) {
+  byte ctr1;
+  for(ctr1 = 0; ctr1 <= __max_led; ctr1++) {
+      set_led_hue(row,ctr1,hue);
+  }
+}
+
+void set_column_hue(byte column, int hue) {
+  byte ctr1;
+  for(ctr1 = 0; ctr1 <= __max_row; ctr1++) {
+      set_led_hue(ctr1,column,hue);
+  }
+}
+
+void set_matrix_hue(int hue) {
+  byte ctr1;
+  byte ctr2;
+  for(ctr2 = 0; ctr2 <= __max_row; ctr2++) {
+    for(ctr1 = 0; ctr1 <= __max_led; ctr1++) {
+      set_led_hue(ctr2,ctr1,hue);
+    }
+  }
+}
+
+void set_led_hue(byte row, byte led, int hue) {
   // see wikipeda: HSV
   float S=100.0,V=100.0,s=S/100.0,v=V/100.0,h_i,f,p,q,t,R,G,B;
     
@@ -316,49 +280,6 @@ void set_led_hue(byte row, byte led, int hue) {
     set_led_rgb(row,led,byte(R*(float)(__max_brightness)),byte(G*(float)(__max_brightness)),byte(B*(float)(__max_brightness)));
 }
 
-
-void random_leds(void) {
-  set_led_hue((byte)(random(__rows)),(byte)(random(__leds_per_row)),(int)(random(360)));
-}
-
-
-void smile_on(int hue) {
-  set_row_byte_hue(0,B00000000,hue);
-  set_row_byte_hue(1,B01100110,hue);
-  set_row_byte_hue(2,B01100110,hue);
-  set_row_byte_hue(3,B00000000,hue);
-  set_row_byte_hue(4,B00011000,hue);
-  set_row_byte_hue(5,B10011001,hue);
-  set_row_byte_hue(6,B01000010,hue);
-  set_row_byte_hue(7,B00111100,hue);
-}
-
-
-void smile_off(int hue) {
-  set_row_byte_hue(0,B00000000,hue);
-  set_row_byte_hue(1,B00000000,hue);
-  set_row_byte_hue(2,B01100110,hue);
-  set_row_byte_hue(3,B00000000,hue);
-  set_row_byte_hue(4,B00011000,hue);
-  set_row_byte_hue(5,B10011001,hue);
-  set_row_byte_hue(6,B01000010,hue);
-  set_row_byte_hue(7,B00111100,hue);
-}
-
-
-void smile_blink(int hue, byte times, int pause) {
- byte ctr;
- for(ctr = 0; ctr < times; ctr++) {
-   delay(pause);
-   smile_on(hue);
-   delay(pause);
-   smile_off(hue);
-   delay(pause);
-   smile_on(hue);
- }
-}
-
-
 void set_row_byte_hue(byte row, byte data_byte, int hue) {
   byte led;
   for(led = 0; led <= __max_led; led++) {
@@ -371,6 +292,35 @@ void set_row_byte_hue(byte row, byte data_byte, int hue) {
   }
 }
 
+
+
+
+/* demo */
+void demo(void) {
+int ctr;
+  for(ctr=0; ctr < 400; ctr++) { 
+    random_leds();
+    if(digitalRead(__button_pin) == PRESSED) {
+      fader();
+      blink_led(2,50);
+      colors();
+      Serial.println("button pressed!");
+      delay(2500);
+    }
+    else {
+       blink_led(1,10);
+    }
+  }
+  smile_blink(200,8,100);
+  delay(2500);
+}
+
+
+
+
+/*
+Functions dealing with hardware specific jobs / settings
+*/
 
 void setup_hardware_spi(void) {
   byte clr;
@@ -417,4 +367,57 @@ void setup_timer1_ovf(void) {
   TCNT1 = __TIMER1_MAX - __TIMER1_CNT;
   // enable all interrupts
   sei(); 
+}
+
+
+ISR(TIMER1_OVF_vect) { /* Framebuffer interrupt routine */
+  TCNT1 = __TIMER1_MAX - __TIMER1_CNT;
+  byte cycle;
+  
+  digitalWrite(__display_enable,LOW); // enable display inside ISR
+  
+  for(cycle = 0; cycle < __max_brightness; cycle++) {
+    byte led;
+    byte row = B00000000;	// row: current source. on when (1)
+    byte red;			// current sinker, on when (0)
+    byte green;			// current sinker, on when (0)
+    byte blue;			// current sinker, on when (0)
+
+    for(row = 0; row <= __max_row; row++) {
+      
+      red = B11111111;		// off
+      green = B11111111;	// off
+      blue = B11111111;		// off
+      
+      for(led = 0; led <= __max_led; led++) {
+        if(cycle < brightness_red[row][led]) {
+          red &= ~(1<<led);
+        }
+        if(cycle < brightness_green[row][led]) {
+          green &= ~(1<<led);
+        }
+        if(cycle < brightness_blue[row][led]) {
+          blue &= ~(1<<led);
+        }
+      }
+
+      digitalWrite(__spi_latch,LOW);
+      spi_transfer(B00000001<<row);
+      spi_transfer(blue);
+      spi_transfer(green);
+      spi_transfer(red);
+      digitalWrite(__spi_latch,HIGH);
+      digitalWrite(__spi_latch,LOW);
+    }
+  }
+  digitalWrite(__display_enable,HIGH);    // disable display outside ISR
+}
+
+
+byte spi_transfer(byte data) {
+  SPDR = data;                    // Start the transmission
+  while (!(SPSR & (1<<SPIF)))     // Wait the end of the transmission
+  {
+  };
+  return SPDR;                    // return the received byte. (we don't need that here)
 }
