@@ -25,7 +25,6 @@
 #include <avr/interrupt.h>   
 #include <avr/io.h>
 
-
 byte brightness_red[__leds_per_row][__rows];	/* memory for RED LEDs */
 byte brightness_green[__leds_per_row][__rows];	/* memory for GREEN LEDs */
 byte brightness_blue[__leds_per_row][__rows]; 	/* memory for BLUE LEDs */
@@ -52,12 +51,13 @@ void setup(void) {
 }
 
 
-void loop(void) {				/* loop runs all the time */
-  demo();
+void loop(void) {
+
+demo();
+demo_2();
+//demo_3();
+  
 }
-
-
-
 
 
 /*
@@ -298,14 +298,14 @@ void set_row_byte_hue(byte row, byte data_byte, int hue) {
 /* demo */
 void demo(void) {
 int ctr;
-  for(ctr=0; ctr < 400; ctr++) { 
+  for(ctr=0; ctr < 200; ctr++) { 
     random_leds();
     if(digitalRead(__button_pin) == PRESSED) {
       fader();
       blink_led(2,50);
       colors();
       Serial.println("button pressed!");
-      delay(2500);
+      delay(1500);
     }
     else {
        blink_led(1,10);
@@ -315,6 +315,65 @@ int ctr;
   delay(2500);
 }
 
+
+
+/* demo_2() */
+void demo_2(void) {
+byte counter1;
+byte counter2;
+
+for (counter1 = 0; counter1 <= 7; counter1++) {
+  for (counter2 = 0; counter2 <= 7; counter2++) {
+    set_led_rgb(counter1,counter2,255,0,0);
+    delay(10);
+    set_led_rgb(counter1,counter2,0,255,0);
+    delay(10);
+    set_led_rgb(counter1,counter2,0,0,255);
+    delay(10);
+    set_led_rgb(counter1,counter2,255,255,255);
+    delay(10);
+  }
+}
+set_matrix_rgb(0,0,0);
+
+}
+
+
+
+/* demo_3() */
+void demo_3(void) {
+static byte counter = 0;
+
+if( digitalRead(__button_pin) == PRESSED ) {
+  counter++;
+}
+if( counter > 4 ) {
+  counter = 0;
+}
+
+switch( counter ) {
+  case 0:
+    set_matrix_rgb(5,0,0);
+  break;
+  case 1:
+    set_matrix_rgb(0,5,0);  
+  break;
+  case 2:
+      set_matrix_rgb(0,0,5);
+  break;
+  case 3:
+      set_matrix_rgb(255,255,255);
+  break;
+  case 4:
+    set_matrix_rgb(0,0,0);
+  break;
+  default:
+  break; 
+}
+
+delay(250);
+
+}
 
 
 
@@ -393,12 +452,23 @@ ISR(TIMER1_OVF_vect) { /* Framebuffer interrupt routine */
         if(cycle < brightness_red[row][led]) {
           red &= ~(1<<led);
         }
+        //else {
+        //  red |= (1<<led);
+        //}
+          
         if(cycle < brightness_green[row][led]) {
           green &= ~(1<<led);
         }
+        //else {
+        //  green |= (1<<led);
+        //}
+
         if(cycle < brightness_blue[row][led]) {
           blue &= ~(1<<led);
         }
+        //else { 
+        //  blue |= (1<<led);
+        //}
       }
 
       digitalWrite(__spi_latch,LOW);
@@ -407,7 +477,6 @@ ISR(TIMER1_OVF_vect) { /* Framebuffer interrupt routine */
       spi_transfer(green);
       spi_transfer(red);
       digitalWrite(__spi_latch,HIGH);
-      digitalWrite(__spi_latch,LOW);
     }
   }
   digitalWrite(__display_enable,HIGH);    // disable display outside ISR
