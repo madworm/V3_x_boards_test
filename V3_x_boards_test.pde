@@ -1,5 +1,5 @@
 /*
-2009 - robert:aT:spitzenpfeil_d*t:org - V3_x board test
+2009 - robert:aT:spitzenpfeil_d*t:org - V3_x board test - V4
 */
 
 #define __spi_clock 13   // SCK - hardware SPI
@@ -13,7 +13,7 @@
 #define __max_led __leds_per_row-1
 #define __brightness_levels 32 // 0...15 above 28 is bad for ISR ( move to timer1, lower irq freq ! )
 #define __max_brightness __brightness_levels-1
-#define __fade_delay 4
+#define __fade_delay 0
 
 #define __TIMER1_MAX 0xFFFF // 16 bit CTR
 #define __TIMER1_CNT 0x0130 // 32 levels --> 0x0130; 38 --> 0x0157 (flicker)
@@ -24,10 +24,44 @@
 
 #include <avr/interrupt.h>   
 #include <avr/io.h>
+#include <avr/pgmspace.h>
 
-byte brightness_red[__leds_per_row][__rows];	/* memory for RED LEDs */
-byte brightness_green[__leds_per_row][__rows];	/* memory for GREEN LEDs */
-byte brightness_blue[__leds_per_row][__rows]; 	/* memory for BLUE LEDs */
+
+byte brightness_red[__rows][__leds_per_row];	/* memory for RED LEDs */
+byte brightness_green[__rows][__leds_per_row];	/* memory for GREEN LEDs */
+byte brightness_blue[__rows][__leds_per_row]; 	/* memory for BLUE LEDs */
+
+
+const int8_t PROGMEM dotcorr_red[__rows][__leds_per_row] = { {0,0,0,0,0,0,0,0}, \
+                                                             {0,0,0,0,0,0,0,0}, \
+                                                             {0,0,0,0,0,0,0,0}, \
+                                                             {0,0,0,0,0,0,0,0}, \
+                                                             {0,0,0,0,0,0,0,0}, \
+                                                             {0,0,0,0,0,0,0,0}, \
+                                                             {0,0,0,0,0,0,0,0}, \
+                                                             {0,0,0,0,0,0,0,0}  \
+                                                           };
+
+const int8_t PROGMEM dotcorr_green[__rows][__leds_per_row] = { {0,0,0,0,0,0,0,0}, \
+                                                               {0,0,0,0,0,0,0,0}, \
+                                                               {0,0,0,0,0,0,0,0}, \
+                                                               {0,0,0,0,0,0,0,0}, \
+                                                               {0,0,0,0,0,0,0,0}, \
+                                                               {0,0,0,0,0,0,0,0}, \
+                                                               {0,0,0,0,0,0,0,0}, \
+                                                               {0,0,0,0,0,0,0,0}  \
+                                                             };
+
+const int8_t PROGMEM dotcorr_blue[__rows][__leds_per_row] = { {0,0,0,0,0,0,0,0}, \
+                                                              {0,0,0,0,0,0,0,0}, \
+                                                              {0,0,0,0,0,0,0,0}, \
+                                                              {0,0,0,0,0,0,0,0}, \
+                                                              {0,0,0,0,0,0,0,0}, \
+                                                              {0,0,0,0,0,0,0,0}, \
+                                                              {0,0,0,0,0,0,0,0}, \
+                                                              {0,0,0,0,0,0,0,0}  \
+                                                            };
+
 
 
 void setup(void) {
@@ -54,7 +88,7 @@ void setup(void) {
 void loop(void) {
 
 demo();
-demo_2();
+//demo_2();
 //demo_3();
   
 }
@@ -170,15 +204,39 @@ basic functions to set the LEDs
 */
 
 void set_led_red(byte row, byte led, byte red) {
-  brightness_red[row][led] = red;
+  int8_t dotcorr = (int8_t)(pgm_read_byte( &dotcorr_red[row][led] )) * red/255;
+  uint8_t value;
+  if( red + dotcorr < 0 ) {
+    value = 0;
+  }
+  else {
+    value = red + dotcorr;
+  }
+  brightness_red[row][led] = value;
 }
 
 void set_led_green(byte row, byte led, byte green) {
-  brightness_green[row][led] = green;
+  int8_t dotcorr = (int8_t)(pgm_read_byte( &dotcorr_green[row][led] )) * green/255;
+  uint8_t value;
+  if( green + dotcorr < 0 ) {
+    value = 0;
+  }
+  else {
+    value = green + dotcorr;
+  }
+  brightness_green[row][led] = value;
 }
 
 void set_led_blue(byte row, byte led, byte blue) {
-  brightness_blue[row][led] = blue;
+    int8_t dotcorr = (int8_t)(pgm_read_byte( &dotcorr_blue[row][led] )) * blue/255;
+  uint8_t value;
+  if( blue + dotcorr < 0 ) {
+    value = 0;
+  }
+  else {
+    value = blue + dotcorr;
+  }
+  brightness_blue[row][led] = value;
 }
 
 void set_led_rgb(byte row, byte led, byte red, byte green, byte blue) {
@@ -324,13 +382,13 @@ byte counter2;
 
 for (counter1 = 0; counter1 <= 7; counter1++) {
   for (counter2 = 0; counter2 <= 7; counter2++) {
-    set_led_rgb(counter1,counter2,255,0,0);
+    set_led_rgb(counter1,counter2,32,0,0);
     delay(10);
-    set_led_rgb(counter1,counter2,0,255,0);
+    set_led_rgb(counter1,counter2,0,32,0);
     delay(10);
-    set_led_rgb(counter1,counter2,0,0,255);
+    set_led_rgb(counter1,counter2,0,0,32);
     delay(10);
-    set_led_rgb(counter1,counter2,255,255,255);
+    set_led_rgb(counter1,counter2,32,32,32);
     delay(10);
   }
 }
