@@ -1,21 +1,27 @@
 /*
-2009 - robert:aT:spitzenpfeil_d*t:org - V3_x board test - V4.1
+2009 - robert:aT:spitzenpfeil_d*t:org - V3_x board test - V5
 */
 
 #define __spi_clock 13   // SCK - hardware SPI
-#define __spi_latch 10
-#define __spi_data 11    // MOSI - hardware SPI
 #define __spi_data_in 12 // MISO - hardware SPI (unused)
+#define __spi_data 11    // MOSI - hardware SPI
+#define __spi_latch 10
+#define __LATCH_LOW PORTB &= ~(1 << PB2) // PB2 = Arduino Diecimila pin 10
+#define __LATCH_HIGH PORTB |= (1 << PB2) // PB2 = Arduino Diecimila pin 10
+
 #define __display_enable 9
+#define __DISPLAY_ON PORTB &= ~(1 << PB1) // PB1 = Arduino Diecimila pin 9
+#define __DISPLAY_OFF PORTB |= (1 << PB1) // PB1 = Arduino Diecimila pin 9
+
 #define __rows 8
 #define __max_row __rows-1
 #define __leds_per_row 8
 #define __max_led __leds_per_row-1
-#define __brightness_levels 32 // 0...15 above 28 is bad for ISR ( move to timer1, lower irq freq ! )
+#define __brightness_levels 32 // higher numbers at your own risk ;-)
 #define __max_brightness __brightness_levels-1
 
-#define __TIMER1_MAX 0xFFFF // 16 bit CTR
-#define __TIMER1_CNT 0x0130 // 32 levels --> 0x0130; 38 --> 0x0157 (flicker)
+#define __TIMER1_MAX 0xFFFF // 16 bit counter
+#define __TIMER1_CNT 0x0022 // 32 levels --> 0x0022
 
 #define __led_pin 4
 #define __button_pin 8
@@ -24,50 +30,57 @@
 #include <avr/interrupt.h>   
 #include <avr/io.h>
 #include <avr/pgmspace.h>
+#include <stdint.h>
 
-
-byte brightness_red[__rows][__leds_per_row];	/* memory for RED LEDs */
+byte brightness_red[__rows][__leds_per_row];	/* memory for RED LEDs - valid values: 0 - __max_brightness*/
 byte brightness_green[__rows][__leds_per_row];	/* memory for GREEN LEDs */
 byte brightness_blue[__rows][__leds_per_row]; 	/* memory for BLUE LEDs */
 
+
+
+
+
 #define YES 1
 #define NO 0
-#define DOTCORR YES /* enable/disable dot correction */
+#define DOTCORR NO/* enable/disable dot correction */
 
 #if (DOTCORR == YES)
 const int8_t PROGMEM dotcorr_red[__rows][__leds_per_row] = { {0,0,0,0,0,0,0,0}, \
                                                              {0,0,0,0,0,0,0,0}, \
                                                              {0,0,0,0,0,0,0,0}, \
-                                                             {0,0,0,-8,-10,0,-6,0}, \
-                                                             {-8,-8,-8,-8,-8,-3,-8,-8}, \
-                                                             {-10,0,-3,0,0,0,0,0}, \
                                                              {0,0,0,0,0,0,0,0}, \
-                                                             {0,0,0,0,0,0,0,0}  \
+                                                             {0,0,0,0,0,0,0,0}, \
+                                                             {0,0,0,0,0,0,0,0}, \
+                                                             {0,0,0,0,0,0,0,0}, \
+                                                             {0,0,0,0,0,0,0,0}  
                                                            };
 
 const int8_t PROGMEM dotcorr_green[__rows][__leds_per_row] = { {0,0,0,0,0,0,0,0}, \
                                                                {0,0,0,0,0,0,0,0}, \
                                                                {0,0,0,0,0,0,0,0}, \
                                                                {0,0,0,0,0,0,0,0}, \
-                                                               {+10,+10,+10,+10,+10,+10,+10,+10}, \
                                                                {0,0,0,0,0,0,0,0}, \
                                                                {0,0,0,0,0,0,0,0}, \
-                                                               {0,0,0,0,0,0,0,0}  \
+                                                               {0,0,0,0,0,0,0,0}, \
+                                                               {0,0,0,0,0,0,0,0}  
                                                              };
 
 const int8_t PROGMEM dotcorr_blue[__rows][__leds_per_row] = { {0,0,0,0,0,0,0,0}, \
                                                               {0,0,0,0,0,0,0,0}, \
                                                               {0,0,0,0,0,0,0,0}, \
-                                                              {0,0,0,0,+8,0,0,0}, \
                                                               {0,0,0,0,0,0,0,0}, \
                                                               {0,0,0,0,0,0,0,0}, \
                                                               {0,0,0,0,0,0,0,0}, \
-                                                              {0,0,0,0,0,0,0,0}  \
+                                                              {0,0,0,0,0,0,0,0}, \
+                                                              {0,0,0,0,0,0,0,0}  
                                                             };
   #define __fade_delay 0                                                            
 #else
   #define __fade_delay 4
-#endif 
+#endif                                                         
+
+
+
 
 
 void setup(void) {
@@ -90,7 +103,6 @@ void setup(void) {
   Serial.begin(9600);
 }
 
-
 void loop(void) {
 
 demo();
@@ -98,6 +110,8 @@ demo();
 //demo_3();
   
 }
+
+
 
 
 /*
@@ -200,7 +214,6 @@ void colors(void) {						/* some diagonal color pattern */
     }
   }
 }
-
 
 
 
@@ -391,8 +404,6 @@ int ctr;
   delay(2500);
 }
 
-
-
 /* demo_2() */
 void demo_2(void) {
 byte counter1;
@@ -413,8 +424,6 @@ for (counter1 = 0; counter1 <= 7; counter1++) {
 set_matrix_rgb(0,0,0);
 
 }
-
-
 
 /* demo_3() */
 void demo_3(void) {
@@ -453,6 +462,7 @@ delay(250);
 
 
 
+
 /*
 Functions dealing with hardware specific jobs / settings
 */
@@ -477,7 +487,6 @@ void setup_hardware_spi(void) {
   SPSR |= (1<<SPI2X); // set prescaler bits
   //SPSR &= ~(1<<SPI2X); // clear prescaler bits
 }
-
 
 void setup_timer1_ovf(void) {
   // Arduino runs at 16 Mhz...
@@ -504,42 +513,36 @@ void setup_timer1_ovf(void) {
   sei(); 
 }
 
-
 ISR(TIMER1_OVF_vect) { /* Framebuffer interrupt routine */
   TCNT1 = __TIMER1_MAX - __TIMER1_CNT;
-  byte cycle;
+  uint8_t pwm_cycle;
+  static uint8_t row = 0;
   
-  digitalWrite(__display_enable,LOW); // enable display inside ISR
+  __DISPLAY_ON;
   
-  for(cycle = 0; cycle < __max_brightness; cycle++) {
-    byte led;
-    byte row = B00000000;	// row: current source. on when (1)
-    byte red;			// current sinker, on when (0)
-    byte green;			// current sinker, on when (0)
-    byte blue;			// current sinker, on when (0)
-
-    for(row = 0; row <= __max_row; row++) {
-      
-      red = B11111111;		// off
-      green = B11111111;	// off
-      blue = B11111111;		// off
+    for(pwm_cycle=0; pwm_cycle <=__max_brightness; pwm_cycle++) {
+  
+      byte led;
+      byte red = B11111111;		// off
+      byte green = B11111111;           // off
+      byte blue = B11111111;		// off
       
       for(led = 0; led <= __max_led; led++) {
-        if(cycle < brightness_red[row][led]) {
+        if(pwm_cycle < brightness_red[row][led]) {
           red &= ~(1<<led);
         }
         //else {
         //  red |= (1<<led);
         //}
           
-        if(cycle < brightness_green[row][led]) {
+        if(pwm_cycle < brightness_green[row][led]) {
           green &= ~(1<<led);
         }
         //else {
         //  green |= (1<<led);
         //}
 
-        if(cycle < brightness_blue[row][led]) {
+        if(pwm_cycle < brightness_blue[row][led]) {
           blue &= ~(1<<led);
         }
         //else { 
@@ -547,17 +550,24 @@ ISR(TIMER1_OVF_vect) { /* Framebuffer interrupt routine */
         //}
       }
 
-      digitalWrite(__spi_latch,LOW);
-      spi_transfer(B00000001<<row);
-      spi_transfer(blue);
-      spi_transfer(green);
-      spi_transfer(red);
-      digitalWrite(__spi_latch,HIGH);
-    }
-  }
-  digitalWrite(__display_enable,HIGH);    // disable display outside ISR
-}
+      __LATCH_LOW;
+        spi_transfer(B00000001<<row);
+        spi_transfer(blue);
+        spi_transfer(green);
+        spi_transfer(red);
+      __LATCH_HIGH;
 
+    }
+    
+  __DISPLAY_OFF;
+  
+  row++; // next time the ISR runs, the next row will be dealt with
+  
+  if(row > __max_row) {
+    row = 0;
+  }
+  
+}
 
 byte spi_transfer(byte data) {
   SPDR = data;                    // Start the transmission
