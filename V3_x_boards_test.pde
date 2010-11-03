@@ -518,7 +518,15 @@ ISR(TIMER1_OVF_vect) { /* Framebuffer interrupt routine */
   uint8_t pwm_cycle;
   static uint8_t row = 0;
   
-  __DISPLAY_ON;
+  __LATCH_LOW; // clear the display, so old (invalid) data doesn't show up from last run (ghost lines...)
+    spi_transfer(0x00);
+    spi_transfer(0xFF);
+    spi_transfer(0xFF);
+    spi_transfer(0xFF);
+    //spi_transfer(0x00);
+  __LATCH_HIGH;
+  
+  __DISPLAY_ON; // only enable the drivers when we actually have time to talk to them
   
     for(pwm_cycle=0; pwm_cycle <=__max_brightness; pwm_cycle++) {
   
@@ -555,11 +563,12 @@ ISR(TIMER1_OVF_vect) { /* Framebuffer interrupt routine */
         spi_transfer(blue);
         spi_transfer(green);
         spi_transfer(red);
+        //spi_transfer(B00000001<<row);
       __LATCH_HIGH;
 
     }
     
-  __DISPLAY_OFF;
+  __DISPLAY_OFF; // we're done with this line, turn the driver's off until next time
   
   row++; // next time the ISR runs, the next row will be dealt with
   
