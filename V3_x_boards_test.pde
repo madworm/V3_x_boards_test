@@ -17,10 +17,9 @@
 #define __max_row __rows-1
 #define __leds_per_row 8
 #define __max_led __leds_per_row-1
-#define __brightness_levels 32	// higher numbers at your own risk ;-)
-#define __max_brightness __brightness_levels-1
+#define __max_brightness 32	// higher numbers at your own risk ;-)
 
-#define __TRUE_RGB_OCR1A 0x0088	// 88 is suitable for 32 levels
+#define __TRUE_RGB_OCR1A 0x0088	// 88 is suitable for 32
 
 #define __led_pin 4
 #define __button_pin 8
@@ -46,7 +45,7 @@ const int8_t PROGMEM dotcorr_red[__rows][__leds_per_row] =
 {0, 0, 0, 0, 0, 0, 0, 0},
 {0, 0, 0, 0, 0, 0, 0, 0},
 {0, 0, 0, 0, 0, 0, 0, 0},
-{0, 0, 0, 0, 0, 0, 0, 0},
+{0, 0, 0, -32, 0, 0, 0, 0},
 {0, 0, 0, 0, 0, 0, 0, 0},
 {0, 0, 0, 0, 0, 0, 0, 0}
 };
@@ -56,7 +55,7 @@ const int8_t PROGMEM dotcorr_green[__rows][__leds_per_row] =
 {0, 0, 0, 0, 0, 0, 0, 0},
 {0, 0, 0, 0, 0, 0, 0, 0},
 {0, 0, 0, 0, 0, 0, 0, 0},
-{0, 0, 0, 0, 0, 0, 0, 0},
+{0, 0, 0, -32, 0, 0, 0, 0},
 {0, 0, 0, 0, 0, 0, 0, 0},
 {0, 0, 0, 0, 0, 0, 0, 0},
 {0, 0, 0, 0, 0, 0, 0, 0}
@@ -68,7 +67,7 @@ const int8_t PROGMEM dotcorr_blue[__rows][__leds_per_row] =
 {0, 0, 0, 0, 0, 0, 0, 0},
 {0, 0, 0, 0, 0, 0, 0, 0},
 {0, 0, 0, 0, 0, 0, 0, 0},
-{0, 0, 0, 0, 0, 0, 0, 0},
+{0, 0, 0, 0, -32, 0, 0, 0},
 {0, 0, 0, 0, 0, 0, 0, 0},
 {0, 0, 0, 0, 0, 0, 0, 0}
 };
@@ -232,7 +231,7 @@ void set_led_red(uint8_t row, uint8_t led, uint8_t red)
 #if (DOTCORR == YES)
 	int8_t dotcorr =
 	    (int8_t) (pgm_read_byte(&dotcorr_red[row][led])) * red /
-	    __brightness_levels;
+	    __max_brightness;
 	uint8_t value;
 	if (red + dotcorr < 0) {
 		value = 0;
@@ -250,7 +249,7 @@ void set_led_green(uint8_t row, uint8_t led, uint8_t green)
 #if (DOTCORR == YES)
 	int8_t dotcorr =
 	    (int8_t) (pgm_read_byte(&dotcorr_green[row][led])) * green /
-	    __brightness_levels;
+	    __max_brightness;
 	uint8_t value;
 	if (green + dotcorr < 0) {
 		value = 0;
@@ -268,7 +267,7 @@ void set_led_blue(uint8_t row, uint8_t led, uint8_t blue)
 #if (DOTCORR == YES)
 	int8_t dotcorr =
 	    (int8_t) (pgm_read_byte(&dotcorr_blue[row][led])) * blue /
-	    __brightness_levels;
+	    __max_brightness;
 	uint8_t value;
 	if (blue + dotcorr < 0) {
 		value = 0;
@@ -559,7 +558,7 @@ ISR(TIMER1_COMPA_vect)
 
 	__DISPLAY_ON;		// only enable the drivers when we actually have time to talk to them
 
-	for (pwm_cycle = 0; pwm_cycle <= __max_brightness; pwm_cycle++) {
+	for (pwm_cycle = 0; pwm_cycle <= (__max_brightness - 1); pwm_cycle++) {
 
 		uint8_t led;
 		uint8_t red = B11111111;	// off
