@@ -19,8 +19,8 @@
 
 ## just so the IDE doesn't throw an error
 ## it will be overwritten, but we need the correct FUSE settings
-8x8RGBLedMatrix1.bootloader.path=atmega
-8x8RGBLedMatrix1.bootloader.file=ATmegaBOOT_168_diecimila.hex
+8x8RGBLedMatrix1.bootloader.path=optiboot
+8x8RGBLedMatrix1.bootloader.file=optiboot_diecimila.hex
 ##
 
 8x8RGBLedMatrix1.bootloader.unlock_bits=0x3F
@@ -42,15 +42,15 @@
 # 'Burn Bootloader' - 'w/ USBtinyISP' just once
 # this makes sure the correct FUSE settings are used
 #
-8x8RGBLedMatrix2.name=8x8 RGB LED Matrix - ATmega168 / 16MHz Quartz / Bootloader
+8x8RGBLedMatrix2.name=8x8 RGB LED Matrix - ATmega168 / 16MHz Quartz / optiboot Bootloader
 8x8RGBLedMatrix2.upload.protocol=stk500
-8x8RGBLedMatrix2.upload.maximum_size=14336
-8x8RGBLedMatrix2.upload.speed=19200
+8x8RGBLedMatrix2.upload.maximum_size=15872
+8x8RGBLedMatrix2.upload.speed=115200
 8x8RGBLedMatrix2.bootloader.low_fuses=0xFF
 8x8RGBLedMatrix2.bootloader.high_fuses=0xDD
-8x8RGBLedMatrix2.bootloader.extended_fuses=0x00
-8x8RGBLedMatrix2.bootloader.path=atmega
-8x8RGBLedMatrix2.bootloader.file=ATmegaBOOT_168_diecimila.hex
+8x8RGBLedMatrix2.bootloader.extended_fuses=0x02
+8x8RGBLedMatrix2.bootloader.path=optiboot
+8x8RGBLedMatrix2.bootloader.file=optiboot_diecimila.hex
 8x8RGBLedMatrix2.bootloader.unlock_bits=0x3F
 8x8RGBLedMatrix2.bootloader.lock_bits=0x0F
 8x8RGBLedMatrix2.build.mcu=atmega168
