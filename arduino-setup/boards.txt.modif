@@ -15,7 +15,7 @@
 8x8RGBLedMatrix1.upload.using=arduino:usbtinyisp
 8x8RGBLedMatrix1.bootloader.low_fuses=0xFF
 8x8RGBLedMatrix1.bootloader.high_fuses=0xDD
-8x8RGBLedMatrix1.bootloader.extended_fuses=0x01
+8x8RGBLedMatrix1.bootloader.extended_fuses=0x05
 
 ## just so the IDE doesn't throw an error
 ## it will be overwritten, but we need the correct FUSE settings
@@ -48,7 +48,7 @@
 8x8RGBLedMatrix2.upload.speed=115200
 8x8RGBLedMatrix2.bootloader.low_fuses=0xFF
 8x8RGBLedMatrix2.bootloader.high_fuses=0xDD
-8x8RGBLedMatrix2.bootloader.extended_fuses=0x02
+8x8RGBLedMatrix2.bootloader.extended_fuses=0x04
 8x8RGBLedMatrix2.bootloader.path=optiboot
 8x8RGBLedMatrix2.bootloader.file=optiboot_diecimila.hex
 8x8RGBLedMatrix2.bootloader.unlock_bits=0x3F
