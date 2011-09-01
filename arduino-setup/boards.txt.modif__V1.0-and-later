@@ -1,0 +1,64 @@
+#
+# add this to the 'boards.txt' of your arduino software
+#
+
+##############################################################
+#
+# to activate this board, select it and use:
+#
+# 'Burn Bootloader' - 'w/ USBtinyISP' just once
+# this makes sure the correct FUSE settings are used
+#
+8x8RGBLedMatrix1.name=8x8 RGB LED Matrix - ATmega168 / 16MHz Quartz / USBtiny
+8x8RGBLedMatrix1.upload.maximum_size=16384
+8x8RGBLedMatrix1.upload.speed=115200
+8x8RGBLedMatrix1.upload.using=arduino:usbtinyisp
+8x8RGBLedMatrix1.bootloader.low_fuses=0xFF
+8x8RGBLedMatrix1.bootloader.high_fuses=0xDD
+8x8RGBLedMatrix1.bootloader.extended_fuses=0x05
+
+## just so the IDE doesn't throw an error
+## it will be overwritten, but we need the correct FUSE settings
+8x8RGBLedMatrix1.bootloader.path=optiboot
+8x8RGBLedMatrix1.bootloader.file=optiboot_diecimila.hex
+##
+
+8x8RGBLedMatrix1.bootloader.unlock_bits=0x3F
+8x8RGBLedMatrix1.bootloader.lock_bits=0x3F
+8x8RGBLedMatrix1.build.mcu=atmega168
+8x8RGBLedMatrix1.build.f_cpu=16000000L
+8x8RGBLedMatrix1.build.core=arduino
+8x8RGBLedMatrix1.build.variant=eightanaloginputs
+#
+#
+#
+##############################################################
+
+
+
+##############################################################
+#
+# to activate this board, select it and use:
+#
+# 'Burn Bootloader' - 'w/ USBtinyISP' just once
+# this makes sure the correct FUSE settings are used
+#
+8x8RGBLedMatrix2.name=8x8 RGB LED Matrix - ATmega168 / 16MHz Quartz / optiboot Bootloader
+8x8RGBLedMatrix2.upload.protocol=stk500
+8x8RGBLedMatrix2.upload.maximum_size=15872
+8x8RGBLedMatrix2.upload.speed=115200
+8x8RGBLedMatrix2.bootloader.low_fuses=0xFF
+8x8RGBLedMatrix2.bootloader.high_fuses=0xDD
+8x8RGBLedMatrix2.bootloader.extended_fuses=0x04
+8x8RGBLedMatrix2.bootloader.path=optiboot
+8x8RGBLedMatrix2.bootloader.file=optiboot_diecimila.hex
+8x8RGBLedMatrix2.bootloader.unlock_bits=0x3F
+8x8RGBLedMatrix2.bootloader.lock_bits=0x0F
+8x8RGBLedMatrix2.build.mcu=atmega168
+8x8RGBLedMatrix2.build.f_cpu=16000000L
+8x8RGBLedMatrix2.build.core=arduino
+8x8RGBLedMatrix2.build.variant=eightanaloginputs
+#
+#
+#
+##############################################################
