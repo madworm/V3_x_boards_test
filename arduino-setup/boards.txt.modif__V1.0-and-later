@@ -44,7 +44,7 @@
 # this makes sure the correct FUSE settings are used
 #
 8x8RGBLedMatrix2.name=8x8 RGB LED Matrix - ATmega168 / 16MHz Quartz / optiboot Bootloader
-8x8RGBLedMatrix2.upload.protocol=stk500
+8x8RGBLedMatrix2.upload.protocol=arduino
 8x8RGBLedMatrix2.upload.maximum_size=15872
 8x8RGBLedMatrix2.upload.speed=115200
 8x8RGBLedMatrix2.bootloader.low_fuses=0xFF
