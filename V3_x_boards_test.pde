@@ -1,5 +1,5 @@
 /*
-2009 - robert:aT:spitzenpfeil_d*t:org - V3_x board test - V5
+2011 - robert:aT:spitzenpfeil_d*t:org - V3_x board test - V6
 */
 
 #define __spi_clock 13		// SCK - hardware SPI
@@ -14,14 +14,16 @@
 #define __DISPLAY_OFF PORTB |= _BV(PB1)	// PB1 = Arduino Diecimila pin 9
 
 #define __rows 8
-#define __max_row __rows-1
+#define __max_row ( __rows - 1 )
 #define __leds_per_row 8
-#define __max_led __leds_per_row-1
-#define __max_brightness 32	// higher numbers at your own risk ;-)
-
-#define __TRUE_RGB_OCR1A 0x0088	// 88 is suitable for 32
+#define __max_led ( __leds_per_row - 1 )
+#define __color_bit_depth 5
+#define __max_brightness 31 // ( (2^__color_bit_depth) - 1 )
+#define __OCR1A_start 1
 
 #define __led_pin 4
+#define __status_pina 2
+#define __status_pinb 3
 #define __button_pin 8
 #define PRESSED LOW
 
@@ -37,6 +39,8 @@ uint8_t brightness_blue[__rows][__leds_per_row];	/* memory for BLUE LEDs */
 #define YES 1
 #define NO 0
 #define DOTCORR NO		/* enable/disable dot correction */
+
+#define DEBUG NO
 
 #if (DOTCORR == YES)
 const int8_t PROGMEM dotcorr_red[__rows][__leds_per_row] =
@@ -88,6 +92,10 @@ void setup(void)
 	pinMode(__button_pin, INPUT);
 	digitalWrite(__button_pin, HIGH);	/* turn on pullup */
 	pinMode(__led_pin, OUTPUT);
+        #if ( DEBUG == YES)
+          pinMode(__status_pina,OUTPUT);
+          pinMode(__status_pinb,OUTPUT);
+        #endif
 	digitalWrite(__spi_latch, LOW);
 	digitalWrite(__spi_data, LOW);
 	digitalWrite(__spi_clock, LOW);
@@ -96,6 +104,7 @@ void setup(void)
 	set_matrix_rgb(0, 0, 0);	/* set the display to BLACK */
 	setup_timer1_ctc();	/* enable the framebuffer display */
 	Serial.begin(9600);
+        __DISPLAY_ON;
 }
 
 void loop(void)
@@ -167,7 +176,7 @@ void smile_blink(uint16_t hue, uint8_t times, uint16_t pause)
 
 void fader(void)
 {				/* fade the matrix form BLACK to WHITE and back */
-	uint8_t ctr1;
+	uint16_t ctr1;
 	uint8_t row;
 	uint8_t led;
 
@@ -180,7 +189,8 @@ void fader(void)
 		delay(__fade_delay);
 	}
 
-	for (ctr1 = __max_brightness; (ctr1 >= 0) & (ctr1 != 255); ctr1--) {
+
+	for (ctr1 = __max_brightness; ( (ctr1 >= 0) && (ctr1 != 65535) ); ctr1--) {
 		for (row = 0; row <= __max_row; row++) {
 			for (led = 0; led <= __max_led; led++) {
 				set_led_rgb(row, led, ctr1, ctr1, ctr1);
@@ -526,9 +536,9 @@ void setup_timer1_ctc(void)
 	cli();			/* disable all interrupts while messing with the register setup */
 
 	/* multiplexed TRUE-RGB PWM mode (quite dim) */
-	/* set prescaler to 256 */
-	TCCR1B |= (_BV(CS12));
-	TCCR1B &= ~(_BV(CS10) | _BV(CS11));
+	/* set prescaler to 1024 */
+	TCCR1B |= ( _BV(CS10) | _BV(CS12) );
+	TCCR1B &= ~( _BV(CS11) );
 	/* set WGM mode 4: CTC using OCR1A */
 	TCCR1A &= ~(_BV(WGM10) | _BV(WGM11));
 	TCCR1B |= _BV(WGM12);
@@ -536,7 +546,7 @@ void setup_timer1_ctc(void)
 	/* normal operation - disconnect PWM pins */
 	TCCR1A &= ~(_BV(COM1A1) | _BV(COM1A0) | _BV(COM1B1) | _BV(COM1B0));
 	/* set top value for TCNT1 */
-	OCR1A = __TRUE_RGB_OCR1A;
+	OCR1A = __OCR1A_start;
 	/* enable COMPA isr */
 	TIMSK1 |= _BV(OCIE1A);
 	/* restore SREG with global interrupt flag */
@@ -545,67 +555,88 @@ void setup_timer1_ctc(void)
 
 ISR(TIMER1_COMPA_vect)
 {				/* Framebuffer interrupt routine */
-	uint8_t pwm_cycle;
+        #if ( DEBUG == YES )
+          PORTD |= _BV(PD2);
+        #endif
+        
+        __DISPLAY_OFF;
+
+        static uint16_t bitmask = 0x0001;         
 	static uint8_t row = 0;
 
-	__LATCH_LOW;		// clear the display, so old (invalid) data doesn't show up from last run (ghost lines...)
-	spi_transfer(0x00);
-	spi_transfer(0xFF);
-	spi_transfer(0xFF);
-	spi_transfer(0xFF);
-	//spi_transfer(0x00);
-	__LATCH_HIGH;
+        #if ( DEBUG == YES )  
+          if ( bitmask == 1 ) {
+                  PORTD &= ~_BV(PD3);          
+                  PORTD |= _BV(PD3);
+                  PORTD &= ~_BV(PD3);          
+                  PORTD |= _BV(PD3);
+                  PORTD &= ~_BV(PD3);          
+          }
+        
+          if ( bitmask == (1<< __color_bit_depth) ) {
+                  PORTD &= ~_BV(PD3);          
+                  PORTD |= _BV(PD3);
+                  PORTD &= ~_BV(PD3);          
+                  PORTD |= _BV(PD3);
+                  PORTD &= ~_BV(PD3);          
+                  PORTD |= _BV(PD3);
+                  PORTD &= ~_BV(PD3);          
+          }
+        #endif
+        
+        uint8_t OCR1A_next;
 
-	__DISPLAY_ON;		// only enable the drivers when we actually have time to talk to them
-
-	for (pwm_cycle = 0; pwm_cycle <= (__max_brightness - 1); pwm_cycle++) {
-
-		uint8_t led;
-		uint8_t red = B11111111;	// off
-		uint8_t green = B11111111;	// off
-		uint8_t blue = B11111111;	// off
-
-		for (led = 0; led <= __max_led; led++) {
-			if (pwm_cycle < brightness_red[row][led]) {
-				red &= ~_BV(led);
-			}
-			//else {
-			//  red |= _BV(led);
-			//}
-
-			if (pwm_cycle < brightness_green[row][led]) {
-				green &= ~_BV(led);
-			}
-			//else {
-			//  green |= _BV(led);
-			//}
-
-			if (pwm_cycle < brightness_blue[row][led]) {
-				blue &= ~_BV(led);
-			}
-			//else { 
-			//  blue |= _BV(led);
-			//}
+	uint8_t led;
+	uint8_t red = B11111111;	// off
+	uint8_t green = B11111111;	// off
+	uint8_t blue = B11111111;	// off
+     
+	for (led = 0; led <= __max_led; led++) {
+		if ( (brightness_red[row][led] & bitmask) ) {
+			red &= ~_BV(led);
 		}
-
-		__LATCH_LOW;
-		spi_transfer(_BV(row));
-		spi_transfer(blue);
-		spi_transfer(green);
-		spi_transfer(red);
-		//spi_transfer( _BV(row) );
-		__LATCH_HIGH;
-
+		if ( (brightness_green[row][led] & bitmask) ) {
+			green &= ~_BV(led);
+		}
+		if ( (brightness_blue[row][led] & bitmask) ) {
+			blue &= ~_BV(led);
+		}
 	}
 
-	__DISPLAY_OFF;		// we're done with this line, turn the driver's off until next time
+	__LATCH_LOW;
+	spi_transfer(_BV(row));
+	spi_transfer(blue);
+	spi_transfer(green);
+	spi_transfer(red);
+	__LATCH_HIGH;
 
-	row++;			// next time the ISR runs, the next row will be dealt with
+        OCR1A_next = bitmask;
+        bitmask = bitmask << 1;
 
-	if (row > __max_row) {
+        if ( bitmask == _BV(__color_bit_depth + 1) ) {
+                #if ( DEBUG == YES) 
+                  PORTD &= ~_BV(PD3);          
+                  PORTD |= _BV(PD3);
+                  PORTD &= ~_BV(PD3);
+                #endif          
+                bitmask = 0x0001;
+                OCR1A_next = 1;
+               	row++;
+        }
+        
+       	if (row > __max_row) {
 		row = 0;
 	}
 
+        OCR1A = OCR1A_next; // when to run next time
+        TCNT1 = 0; // clear timer to compensate for code runtime above
+        TIFR1 = _BV(OCF1A); // clear interrupt flag to kill any erroneously pending interrupt in the queue
+        
+        __DISPLAY_ON;
+
+        #if ( DEBUG == YES ) 
+          PORTD &= ~_BV(PD2);
+        #endif
 }
 
 uint8_t spi_transfer(uint8_t data)
