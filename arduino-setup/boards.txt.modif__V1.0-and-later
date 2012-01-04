@@ -6,13 +6,13 @@
 #
 # to activate this board, select it and use:
 #
-# 'Burn Bootloader' - 'w/ USBtinyISP' just once
+# 'Burn Bootloader' just once
+# Make sure to select your programmer type in the menu!
 # this makes sure the correct FUSE settings are used
 #
-8x8RGBLedMatrix1.name=8x8 RGB LED Matrix - ATmega168 / 16MHz Quartz / USBtiny
+8x8RGBLedMatrix1.name=8x8 RGB LED Matrix - ATmega168 / 16MHz Quartz / ISP
 8x8RGBLedMatrix1.upload.maximum_size=16384
 8x8RGBLedMatrix1.upload.speed=115200
-8x8RGBLedMatrix1.upload.using=arduino:usbtinyisp
 8x8RGBLedMatrix1.bootloader.low_fuses=0xFF
 8x8RGBLedMatrix1.bootloader.high_fuses=0xDD
 8x8RGBLedMatrix1.bootloader.extended_fuses=0x05
@@ -40,7 +40,8 @@
 #
 # to activate this board, select it and use:
 #
-# 'Burn Bootloader' - 'w/ USBtinyISP' just once
+# 'Burn Bootloader' just once
+# Make sure to select your programmer type in the menu!
 # this makes sure the correct FUSE settings are used
 #
 8x8RGBLedMatrix2.name=8x8 RGB LED Matrix - ATmega168 / 16MHz Quartz / optiboot Bootloader
