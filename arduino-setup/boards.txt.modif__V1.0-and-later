@@ -44,7 +44,7 @@
 # Make sure to select your programmer type in the menu!
 # this makes sure the correct FUSE settings are used
 #
-8x8RGBLedMatrix2.name=8x8 RGB LED Matrix - ATmega168 / 16MHz Quartz / optiboot Bootloader
+8x8RGBLedMatrix2.name=8x8 RGB LED Matrix - ATmega168 / 16MHz Quartz / optiboot 115k2
 8x8RGBLedMatrix2.upload.protocol=arduino
 8x8RGBLedMatrix2.upload.maximum_size=15872
 8x8RGBLedMatrix2.upload.speed=115200
